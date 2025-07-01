@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, Phone, Calendar, CheckCircle, Clock, AlertCircle, Trash2, RefreshCw } from 'lucide-react';
+import { Eye, Phone, Calendar, CheckCircle, Clock, AlertTriangle, Trash2, RefreshCw, Home } from 'lucide-react';
+import Link from 'next/link';
 
 interface ContactRequest {
   id: number;
@@ -54,6 +55,9 @@ export default function AdminDashboard() {
             req.id === id ? { ...req, status } : req
           )
         );
+        if (selectedRequest && selectedRequest.id === id) {
+          setSelectedRequest({ ...selectedRequest, status });
+        }
       }
     } catch (error) {
       console.error('خطأ في تحديث الحالة:', error);
@@ -98,9 +102,9 @@ export default function AdminDashboard() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'new': return <AlertCircle style={{ width: '16px', height: '16px', color: '#ef4444' }} />;
-      case 'contacted': return <Clock style={{ width: '16px', height: '16px', color: '#eab308' }} />;
-      case 'completed': return <CheckCircle style={{ width: '16px', height: '16px', color: '#22c55e' }} />;
+      case 'new': return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      case 'contacted': return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
       default: return null;
     }
   };
@@ -126,674 +130,360 @@ export default function AdminDashboard() {
   };
 
   return (
-    <>
-      <style jsx global>{`
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-        
-        body {
-          font-family: 'Noto Sans Arabic', sans-serif;
-          background-color: #f3f4f6;
-        }
-        
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 1rem;
-        }
-        
-        .header-bg {
-          background: white;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.5rem 0;
-        }
-        
-        .title {
-          font-size: 2rem;
-          font-weight: bold;
-          color: #111827;
-          margin: 0;
-        }
-        
-        .subtitle {
-          color: #6b7280;
-          margin-top: 0.25rem;
-        }
-        
-        .btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: #059669;
-          color: white;
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          border: none;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s;
-        }
-        
-        .btn:hover {
-          background: #047857;
-        }
-        
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-          background: white;
-          border-radius: 0.5rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stat-header {
-          display: flex;
-          align-items: center;
-        }
-        
-        .stat-icon {
-          padding: 0.5rem;
-          border-radius: 0.5rem;
-          margin-left: 1rem;
-        }
-        
-        .icon-blue { background: #dbeafe; }
-        .icon-red { background: #fee2e2; }
-        .icon-yellow { background: #fef3c7; }
-        .icon-green { background: #dcfce7; }
-        
-        .stat-text {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #6b7280;
-          margin-bottom: 0.25rem;
-        }
-        
-        .stat-number {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #111827;
-        }
-        
-        .filters {
-          background: white;
-          border-radius: 0.5rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          margin-bottom: 1.5rem;
-        }
-        
-        .filter-buttons {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        
-        .filter-btn {
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          border: none;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s;
-        }
-        
-        .filter-active {
-          color: white;
-        }
-        
-        .filter-inactive {
-          background: #f3f4f6;
-          color: #374151;
-        }
-        
-        .filter-inactive:hover {
-          background: #e5e7eb;
-        }
-        
-        .main-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.5rem;
-        }
-        
-        @media (max-width: 1024px) {
-          .main-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-        
-        .requests-panel, .details-panel {
-          background: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .panel-header {
-          padding: 1.5rem;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .panel-title {
-          font-size: 1.25rem;
-          font-weight: bold;
-          color: #111827;
-        }
-        
-        .requests-list {
-          max-height: 400px;
-          overflow-y: auto;
-        }
-        
-        .request-item {
-          padding: 1rem;
-          border-bottom: 1px solid #f3f4f6;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        
-        .request-item:hover {
-          background: #f9fafb;
-        }
-        
-        .request-selected {
-          background: #ecfdf5;
-          border-right: 4px solid #059669;
-        }
-        
-        .request-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 0.5rem;
-        }
-        
-        .request-name {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 0.25rem;
-        }
-        
-        .name-text {
-          font-weight: 600;
-          color: #111827;
-        }
-        
-        .contact-info {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          font-size: 0.875rem;
-          color: #6b7280;
-          margin-bottom: 0.25rem;
-        }
-        
-        .date-info {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          font-size: 0.875rem;
-          color: #9ca3af;
-        }
-        
-        .status-badge {
-          padding: 0.25rem 0.5rem;
-          font-size: 0.75rem;
-          border-radius: 9999px;
-          font-weight: 600;
-        }
-        
-        .status-new {
-          background: #fee2e2;
-          color: #991b1b;
-        }
-        
-        .status-contacted {
-          background: #fef3c7;
-          color: #92400e;
-        }
-        
-        .status-completed {
-          background: #dcfce7;
-          color: #166534;
-        }
-        
-        .message-preview {
-          font-size: 0.875rem;
-          color: #6b7280;
-          margin-top: 0.5rem;
-          line-height: 1.4;
-        }
-        
-        .details-content {
-          padding: 1.5rem;
-        }
-        
-        .detail-item {
-          margin-bottom: 1rem;
-        }
-        
-        .detail-label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #374151;
-          margin-bottom: 0.25rem;
-        }
-        
-        .detail-value {
-          font-size: 1rem;
-          color: #111827;
-        }
-        
-        .detail-large {
-          font-size: 1.125rem;
-          font-weight: 600;
-        }
-        
-        .detail-flex {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .phone-link {
-          color: #059669;
-          text-decoration: none;
-        }
-        
-        .phone-link:hover {
-          text-decoration: underline;
-        }
-        
-        .status-current {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .message-box {
-          background: #f9fafb;
-          border-radius: 0.5rem;
-          padding: 1rem;
-        }
-        
-        .message-text {
-          color: #111827;
-          white-space: pre-wrap;
-          line-height: 1.6;
-        }
-        
-        .status-buttons {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-        
-        .status-btn {
-          padding: 0.25rem 0.75rem;
-          font-size: 0.875rem;
-          border-radius: 0.5rem;
-          border: none;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s;
-        }
-        
-        .actions {
-          padding-top: 1rem;
-          border-top: 1px solid #e5e7eb;
-          margin-top: 1rem;
-        }
-        
-        .action-buttons {
-          display: flex;
-          gap: 0.5rem;
-        }
-        
-        .btn-call {
-          background: #059669;
-          color: white;
-        }
-        
-        .btn-call:hover {
-          background: #047857;
-        }
-        
-        .btn-delete {
-          background: #dc2626;
-          color: white;
-        }
-        
-        .btn-delete:hover {
-          background: #b91c1c;
-        }
-        
-        .empty-state {
-          padding: 1.5rem;
-          text-align: center;
-          color: #6b7280;
-        }
-        
-        .loading {
-          padding: 1.5rem;
-          text-align: center;
-        }
-        
-        .spinner {
-          display: inline-block;
-          width: 2rem;
-          height: 2rem;
-          border: 2px solid #e5e7eb;
-          border-top: 2px solid #059669;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 0.5rem;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-          color: #6b7280;
-        }
-      `}</style>
-
-      <div style={{ minHeight: '100vh', background: '#f3f4f6' }} dir="rtl">
-        {/* Header */}
-        <div className="header-bg">
-          <div className="container">
-            <div className="header-content">
-              <div>
-                <h1 className="title">لوحة إدارة طلبات التواصل</h1>
-                <p className="subtitle">إدارة ومتابعة طلبات العملاء</p>
-              </div>
-              <button onClick={fetchRequests} className="btn">
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', fontFamily: 'Noto Sans Arabic, sans-serif' }} dir="rtl">
+      {/* Header */}
+      <div style={{ background: 'white', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', borderBottom: '1px solid #e5e7eb', padding: '1.5rem 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>لوحة إدارة طلبات التواصل</h1>
+              <p style={{ color: '#6b7280', marginTop: '0.25rem' }}>إدارة ومتابعة طلبات العملاء</p>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={fetchRequests} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1e3a8a', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
                 <RefreshCw style={{ width: '16px', height: '16px' }} />
                 تحديث
               </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-          {/* الإحصائيات */}
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon icon-blue">
-                  <Eye style={{ width: '24px', height: '24px', color: '#2563eb' }} />
-                </div>
-                <div>
-                  <p className="stat-text">إجمالي الطلبات</p>
-                  <p className="stat-number">{stats.total}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon icon-red">
-                  <AlertCircle style={{ width: '24px', height: '24px', color: '#dc2626' }} />
-                </div>
-                <div>
-                  <p className="stat-text">طلبات جديدة</p>
-                  <p className="stat-number">{stats.new}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon icon-yellow">
-                  <Clock style={{ width: '24px', height: '24px', color: '#d97706' }} />
-                </div>
-                <div>
-                  <p className="stat-text">تم التواصل</p>
-                  <p className="stat-number">{stats.contacted}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon icon-green">
-                  <CheckCircle style={{ width: '24px', height: '24px', color: '#16a34a' }} />
-                </div>
-                <div>
-                  <p className="stat-text">مكتملة</p>
-                  <p className="stat-number">{stats.completed}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* فلاتر */}
-          <div className="filters">
-            <div className="filter-buttons">
-              <button
-                onClick={() => setFilter('all')}
-                className={`filter-btn ${filter === 'all' ? 'filter-active' : 'filter-inactive'}`}
-                style={{
-                  background: filter === 'all' ? '#059669' : '#f3f4f6',
-                  color: filter === 'all' ? 'white' : '#374151'
-                }}
-              >
-                جميع الطلبات ({stats.total})
-              </button>
-              <button
-                onClick={() => setFilter('new')}
-                className={`filter-btn ${filter === 'new' ? 'filter-active' : 'filter-inactive'}`}
-                style={{
-                  background: filter === 'new' ? '#dc2626' : '#f3f4f6',
-                  color: filter === 'new' ? 'white' : '#374151'
-                }}
-              >
-                جديدة ({stats.new})
-              </button>
-              <button
-                onClick={() => setFilter('contacted')}
-                className={`filter-btn ${filter === 'contacted' ? 'filter-active' : 'filter-inactive'}`}
-                style={{
-                  background: filter === 'contacted' ? '#d97706' : '#f3f4f6',
-                  color: filter === 'contacted' ? 'white' : '#374151'
-                }}
-              >
-                تم التواصل ({stats.contacted})
-              </button>
-              <button
-                onClick={() => setFilter('completed')}
-                className={`filter-btn ${filter === 'completed' ? 'filter-active' : 'filter-inactive'}`}
-                style={{
-                  background: filter === 'completed' ? '#16a34a' : '#f3f4f6',
-                  color: filter === 'completed' ? 'white' : '#374151'
-                }}
-              >
-                مكتملة ({stats.completed})
-              </button>
-            </div>
-          </div>
-
-          <div className="main-grid">
-            {/* قائمة الطلبات */}
-            <div className="requests-panel">
-              <div className="panel-header">
-                <h2 className="panel-title">طلبات التواصل</h2>
-              </div>
-              
-              <div className="requests-list">
-                {loading ? (
-                  <div className="loading">
-                    <div className="spinner"></div>
-                    <p className="loading-text">جاري التحميل...</p>
-                  </div>
-                ) : filteredRequests.length === 0 ? (
-                  <div className="empty-state">
-                    لا توجد طلبات {filter !== 'all' ? getStatusText(filter) : ''}
-                  </div>
-                ) : (
-                  filteredRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      onClick={() => setSelectedRequest(request)}
-                      className={`request-item ${selectedRequest?.id === request.id ? 'request-selected' : ''}`}
-                    >
-                      <div className="request-header">
-                        <div style={{ flex: 1 }}>
-                          <div className="request-name">
-                            {getStatusIcon(request.status)}
-                            <h3 className="name-text">{request.name}</h3>
-                          </div>
-                          <p className="contact-info">
-                            <Phone style={{ width: '12px', height: '12px' }} />
-                            {request.phone}
-                          </p>
-                          <p className="date-info">
-                            <Calendar style={{ width: '12px', height: '12px' }} />
-                            {formatDate(request.created_at)}
-                          </p>
-                        </div>
-                        <span className={`status-badge status-${request.status}`}>
-                          {getStatusText(request.status)}
-                        </span>
-                      </div>
-                      <p className="message-preview">
-                        {request.message.substring(0, 100)}...
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* تفاصيل الطلب */}
-            <div className="details-panel">
-              <div className="panel-header">
-                <h2 className="panel-title">تفاصيل الطلب</h2>
-              </div>
-              
-              {selectedRequest ? (
-                <div className="details-content">
-                  <div className="detail-item">
-                    <label className="detail-label">اسم العميل</label>
-                    <p className="detail-value detail-large">{selectedRequest.name}</p>
-                  </div>
-
-                  <div className="detail-item">
-                    <label className="detail-label">رقم الهاتف</label>
-                    <p className="detail-value detail-flex">
-                      <Phone style={{ width: '16px', height: '16px' }} />
-                      <a href={`tel:${selectedRequest.phone}`} className="phone-link">
-                        {selectedRequest.phone}
-                      </a>
-                    </p>
-                  </div>
-
-                  <div className="detail-item">
-                    <label className="detail-label">تاريخ الطلب</label>
-                    <p className="detail-value detail-flex">
-                      <Calendar style={{ width: '16px', height: '16px' }} />
-                      {formatDate(selectedRequest.created_at)}
-                    </p>
-                  </div>
-
-                  <div className="detail-item">
-                    <label className="detail-label">الحالة الحالية</label>
-                    <div className="status-current">
-                      {getStatusIcon(selectedRequest.status)}
-                      <span className={`status-badge status-${selectedRequest.status}`}>
-                        {getStatusText(selectedRequest.status)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="detail-item">
-                    <label className="detail-label">تفاصيل المشروع</label>
-                    <div className="message-box">
-                      <p className="message-text">{selectedRequest.message}</p>
-                    </div>
-                  </div>
-
-                  <div className="detail-item">
-                    <label className="detail-label">تحديث الحالة</label>
-                    <div className="status-buttons">
-                      <button
-                        onClick={() => updateStatus(selectedRequest.id, 'new')}
-                        className="status-btn"
-                        style={{
-                          background: selectedRequest.status === 'new' ? '#dc2626' : '#fee2e2',
-                          color: selectedRequest.status === 'new' ? 'white' : '#991b1b'
-                        }}
-                      >
-                        جديد
-                      </button>
-                      <button
-                        onClick={() => updateStatus(selectedRequest.id, 'contacted')}
-                        className="status-btn"
-                        style={{
-                          background: selectedRequest.status === 'contacted' ? '#d97706' : '#fef3c7',
-                          color: selectedRequest.status === 'contacted' ? 'white' : '#92400e'
-                        }}
-                      >
-                        تم التواصل
-                      </button>
-                      <button
-                        onClick={() => updateStatus(selectedRequest.id, 'completed')}
-                        className="status-btn"
-                        style={{
-                          background: selectedRequest.status === 'completed' ? '#16a34a' : '#dcfce7',
-                          color: selectedRequest.status === 'completed' ? 'white' : '#166534'
-                        }}
-                      >
-                        مكتمل
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="actions">
-                    <div className="action-buttons">
-                      <a href={`tel:${selectedRequest.phone}`} className="btn btn-call">
-                        <Phone style={{ width: '16px', height: '16px' }} />
-                        اتصال
-                      </a>
-                      <button
-                        onClick={() => deleteRequest(selectedRequest.id)}
-                        className="btn btn-delete"
-                      >
-                        <Trash2 style={{ width: '16px', height: '16px' }} />
-                        حذف
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="empty-state">
-                  اختر طلباً لعرض التفاصيل
-                </div>
-              )}
+              <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#f3f4f6', color: '#374151', padding: '0.5rem 1rem', borderRadius: '0.5rem', textDecoration: 'none', fontWeight: '500' }}>
+                <Home style={{ width: '16px', height: '16px' }} />
+                الرئيسية
+              </Link>
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem' }}>
+        {/* الإحصائيات */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: '60px', height: '60px', background: '#1e3a8a', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '1rem' }}>
+                <Eye style={{ width: '24px', height: '24px', color: 'white' }} />
+              </div>
+              <div>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>إجمالي الطلبات</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a', margin: 0 }}>{stats.total}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: '60px', height: '60px', background: '#dc2626', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '1rem' }}>
+                <AlertTriangle style={{ width: '24px', height: '24px', color: 'white' }} />
+              </div>
+              <div>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>طلبات جديدة</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc2626', margin: 0 }}>{stats.new}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: '60px', height: '60px', background: '#f59e0b', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '1rem' }}>
+                <Clock style={{ width: '24px', height: '24px', color: 'white' }} />
+              </div>
+              <div>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>تم التواصل</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f59e0b', margin: 0 }}>{stats.contacted}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: '60px', height: '60px', background: '#10b981', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '1rem' }}>
+                <CheckCircle style={{ width: '24px', height: '24px', color: 'white' }} />
+              </div>
+              <div>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>مكتملة</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', margin: 0 }}>{stats.completed}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* فلاتر */}
+        <div style={{ background: 'white', borderRadius: '0.5rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              onClick={() => setFilter('all')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '9999px',
+                border: '2px solid',
+                borderColor: filter === 'all' ? '#1e3a8a' : '#e5e7eb',
+                background: filter === 'all' ? '#1e3a8a' : 'white',
+                color: filter === 'all' ? 'white' : '#374151',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              جميع الطلبات ({stats.total})
+            </button>
+            <button
+              onClick={() => setFilter('new')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '9999px',
+                border: '2px solid',
+                borderColor: filter === 'new' ? '#dc2626' : '#e5e7eb',
+                background: filter === 'new' ? '#dc2626' : 'white',
+                color: filter === 'new' ? 'white' : '#374151',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              جديدة ({stats.new})
+            </button>
+            <button
+              onClick={() => setFilter('contacted')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '9999px',
+                border: '2px solid',
+                borderColor: filter === 'contacted' ? '#f59e0b' : '#e5e7eb',
+                background: filter === 'contacted' ? '#f59e0b' : 'white',
+                color: filter === 'contacted' ? 'white' : '#374151',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              تم التواصل ({stats.contacted})
+            </button>
+            <button
+              onClick={() => setFilter('completed')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '9999px',
+                border: '2px solid',
+                borderColor: filter === 'completed' ? '#10b981' : '#e5e7eb',
+                background: filter === 'completed' ? '#10b981' : 'white',
+                color: filter === 'completed' ? 'white' : '#374151',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              مكتملة ({stats.completed})
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          {/* قائمة الطلبات */}
+          <div style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>طلبات التواصل</h2>
+            </div>
+            
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {loading ? (
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                  <div style={{ width: '2rem', height: '2rem', border: '2px solid #e5e7eb', borderTop: '2px solid #1e3a8a', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }}></div>
+                  <p style={{ color: '#6b7280' }}>جاري التحميل...</p>
+                </div>
+              ) : filteredRequests.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                  لا توجد طلبات {filter !== 'all' ? getStatusText(filter) : ''}
+                </div>
+              ) : (
+                filteredRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    onClick={() => setSelectedRequest(request)}
+                    style={{
+                      padding: '1.5rem',
+                      borderBottom: '1px solid #f3f4f6',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      background: selectedRequest?.id === request.id ? '#ecfdf5' : 'white',
+                      borderRight: selectedRequest?.id === request.id ? '4px solid #1e3a8a' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedRequest?.id !== request.id) {
+                        e.currentTarget.style.background = '#f9fafb';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedRequest?.id !== request.id) {
+                        e.currentTarget.style.background = 'white';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                          {getStatusIcon(request.status)}
+                          <h3 style={{ fontWeight: '600', color: '#111827', margin: 0 }}>{request.name}</h3>
+                        </div>
+                        <p style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0' }}>
+                          <Phone style={{ width: '12px', height: '12px' }} />
+                          {request.phone}
+                        </p>
+                        <p style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', color: '#9ca3af', margin: 0 }}>
+                          <Calendar style={{ width: '12px', height: '12px' }} />
+                          {formatDate(request.created_at)}
+                        </p>
+                      </div>
+                      <span style={{
+                        padding: '0.25rem 0.75rem',
+                        fontSize: '0.75rem',
+                        borderRadius: '9999px',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        background: request.status === 'new' ? '#fee2e2' : request.status === 'contacted' ? '#fef3c7' : '#dcfce7',
+                        color: request.status === 'new' ? '#991b1b' : request.status === 'contacted' ? '#92400e' : '#065f46',
+                        border: `1px solid ${request.status === 'new' ? 'rgba(239, 68, 68, 0.2)' : request.status === 'contacted' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
+                      }}>
+                        {getStatusText(request.status)}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', lineHeight: 1.4 }}>
+                      {request.message.substring(0, 100)}...
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* تفاصيل الطلب */}
+          <div style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>تفاصيل الطلب</h2>
+            </div>
+            
+            {selectedRequest ? (
+              <div style={{ padding: '1.5rem' }}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.25rem' }}>اسم العميل</label>
+                  <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#111827', margin: 0 }}>{selectedRequest.name}</p>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.25rem' }}>رقم الهاتف</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Phone style={{ width: '16px', height: '16px', color: '#6b7280' }} />
+                    <a href={`tel:${selectedRequest.phone}`} style={{ color: '#1e3a8a', textDecoration: 'none', fontWeight: '500' }}>
+                      {selectedRequest.phone}
+                    </a>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.25rem' }}>تاريخ الطلب</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Calendar style={{ width: '16px', height: '16px', color: '#6b7280' }} />
+                    <span>{formatDate(selectedRequest.created_at)}</span>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.25rem' }}>الحالة الحالية</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {getStatusIcon(selectedRequest.status)}
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      fontSize: '0.75rem',
+                      borderRadius: '9999px',
+                      fontWeight: '600',
+                      background: selectedRequest.status === 'new' ? '#fee2e2' : selectedRequest.status === 'contacted' ? '#fef3c7' : '#dcfce7',
+                      color: selectedRequest.status === 'new' ? '#991b1b' : selectedRequest.status === 'contacted' ? '#92400e' : '#065f46'
+                    }}>
+                      {getStatusText(selectedRequest.status)}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.25rem' }}>تفاصيل المشروع</label>
+                  <div style={{ background: '#f9fafb', borderRadius: '0.5rem', padding: '1rem' }}>
+                    <p style={{ color: '#111827', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0 }}>{selectedRequest.message}</p>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>تحديث الحالة</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => updateStatus(selectedRequest.id, 'new')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        background: selectedRequest.status === 'new' ? '#dc2626' : '#f3f4f6',
+                        color: selectedRequest.status === 'new' ? 'white' : '#374151'
+                      }}
+                    >
+                      جديد
+                    </button>
+                    <button
+                      onClick={() => updateStatus(selectedRequest.id, 'contacted')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        background: selectedRequest.status === 'contacted' ? '#f59e0b' : '#f3f4f6',
+                        color: selectedRequest.status === 'contacted' ? 'white' : '#374151'
+                      }}
+                    >
+                      تم التواصل
+                    </button>
+                    <button
+                      onClick={() => updateStatus(selectedRequest.id, 'completed')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        background: selectedRequest.status === 'completed' ? '#10b981' : '#f3f4f6',
+                        color: selectedRequest.status === 'completed' ? 'white' : '#374151'
+                      }}
+                    >
+                      مكتمل
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <a href={`tel:${selectedRequest.phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1e3a8a', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', textDecoration: 'none', fontWeight: '500' }}>
+                      <Phone style={{ width: '16px', height: '16px' }} />
+                      اتصال
+                    </a>
+                    <button
+                      onClick={() => deleteRequest(selectedRequest.id)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#dc2626', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+                    >
+                      <Trash2 style={{ width: '16px', height: '16px' }} />
+                      حذف
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                اختر طلباً لعرض التفاصيل
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

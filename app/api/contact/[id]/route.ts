@@ -1,85 +1,68 @@
 // app/api/contact/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { updateContactRequestStatus, deleteContactRequest } from '@/lib/database';
+import { query } from '@/lib/database';
 
-// تحديث حالة طلب التواصل
+// PATCH - تحديث حالة طلب التواصل
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
-    const body = await request.json();
-    const { status } = body;
-
-    // التحقق من صحة البيانات
-    if (!id || isNaN(id)) {
+    const { status } = await request.json();
+    const { id } = params;
+    
+    // التحقق من صحة الحالة
+    const validStatuses = ['new', 'contacted', 'completed'];
+    if (!validStatuses.includes(status)) {
       return NextResponse.json(
-        { success: false, message: 'معرف الطلب غير صحيح' },
+        { success: false, message: 'حالة غير صحيحة' },
         { status: 400 }
       );
     }
-
-    if (!status || !['new', 'contacted', 'completed'].includes(status)) {
-      return NextResponse.json(
-        { success: false, message: 'حالة الطلب غير صحيحة' },
-        { status: 400 }
-      );
-    }
-
+    
     // تحديث الحالة في قاعدة البيانات
-    const result = await updateContactRequestStatus(id, status);
-
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        message: 'تم تحديث حالة الطلب بنجاح'
-      });
-    } else {
-      throw new Error('فشل في تحديث حالة الطلب');
-    }
-
+    await query(
+      'UPDATE contact_requests SET status = ? WHERE id = ?',
+      [status, parseInt(id)]
+    );
+    
+    return NextResponse.json({
+      success: true,
+      message: 'تم تحديث الحالة بنجاح'
+    });
+    
   } catch (error) {
-    console.error('خطأ في تحديث حالة الطلب:', error);
+    console.error('خطأ في تحديث الحالة:', error);
     return NextResponse.json(
-      { success: false, message: 'حدث خطأ في الخادم' },
+      { success: false, message: 'حدث خطأ في التحديث' },
       { status: 500 }
     );
   }
 }
 
-// حذف طلب التواصل
+// DELETE - حذف طلب التواصل
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
-
-    // التحقق من صحة البيانات
-    if (!id || isNaN(id)) {
-      return NextResponse.json(
-        { success: false, message: 'معرف الطلب غير صحيح' },
-        { status: 400 }
-      );
-    }
-
+    const { id } = params;
+    
     // حذف الطلب من قاعدة البيانات
-    const result = await deleteContactRequest(id);
-
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        message: 'تم حذف الطلب بنجاح'
-      });
-    } else {
-      throw new Error('فشل في حذف الطلب');
-    }
-
+    await query(
+      'DELETE FROM contact_requests WHERE id = ?',
+      [parseInt(id)]
+    );
+    
+    return NextResponse.json({
+      success: true,
+      message: 'تم حذف الطلب بنجاح'
+    });
+    
   } catch (error) {
     console.error('خطأ في حذف الطلب:', error);
     return NextResponse.json(
-      { success: false, message: 'حدث خطأ في الخادم' },
+      { success: false, message: 'حدث خطأ في الحذف' },
       { status: 500 }
     );
   }

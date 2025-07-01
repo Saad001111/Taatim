@@ -1,133 +1,108 @@
 // lib/database.ts
 import mysql from 'mysql2/promise';
 
-// إعدادات قاعدة البيانات
-const dbConfig = {
+const connectionConfig = {
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'ta3teem_website',
+  database: process.env.DB_NAME || 'ta3teem_db',
   charset: 'utf8mb4',
-  connectTimeout: 10000,
-  acquireTimeout: 10000,
+  timezone: '+03:00', // التوقيت السعودي
 };
 
-console.log('🔧 إعدادات قاعدة البيانات:', {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  database: dbConfig.database,
-  hasPassword: !!dbConfig.password
-});
-
-// إنشاء pool للاتصالات
+// إنشاء pool للاتصالات لتحسين الأداء
 const pool = mysql.createPool({
-  ...dbConfig,
+  ...connectionConfig,
   waitForConnections: true,
-  connectionLimit: 5,
+  connectionLimit: 10,
   queueLimit: 0,
+  acquireTimeout: 60000,
+  timeout: 60000,
 });
 
-// التحقق من الاتصال
-export async function testConnection(): Promise<boolean> {
+// دالة تنفيذ الاستعلامات
+export async function query(sql: string, params: any[] = []) {
   try {
-    console.log('🔍 اختبار الاتصال بقاعدة البيانات...');
-    const connection = await pool.getConnection();
-    await connection.ping();
-    console.log('✅ تم الاتصال بقاعدة البيانات بنجاح');
-    connection.release();
+    const [results] = await pool.execute(sql, params);
+    return results;
+  } catch (error) {
+    console.error('خطأ في قاعدة البيانات:', error);
+    throw error;
+  }
+}
+
+// دالة إنشاء الجداول المطلوبة
+export async function initDatabase() {
+  try {
+    // جدول طلبات التواصل
+    await query(`
+      CREATE TABLE IF NOT EXISTS contact_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        status ENUM('new', 'contacted', 'completed') DEFAULT 'new',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // جدول الحجوزات
+    await query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        booking_id VARCHAR(50) UNIQUE NOT NULL,
+        service_type ENUM('consultation', 'measurement', 'premium_consultation') NOT NULL,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(20) NOT NULL,
+        customer_email VARCHAR(255),
+        customer_area VARCHAR(100) NOT NULL,
+        customer_address TEXT,
+        booking_date DATE NOT NULL,
+        booking_time TIME NOT NULL,
+        notes TEXT,
+        status ENUM('pending', 'confirmed', 'completed', 'cancelled') DEFAULT 'confirmed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_booking_date (booking_date),
+        INDEX idx_status (status),
+        INDEX idx_customer_phone (customer_phone)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // جدول حسابات التكلفة (اختياري للاحتفاظ بالسجلات)
+    await query(`
+      CREATE TABLE IF NOT EXISTS cost_calculations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_info JSON,
+        calculation_details JSON,
+        total_cost DECIMAL(10,2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    console.log('تم إنشاء جميع الجداول بنجاح');
+    
+  } catch (error) {
+    console.error('خطأ في إنشاء قاعدة البيانات:', error);
+    throw error;
+  }
+}
+
+// دالة للتحقق من الاتصال
+export async function testConnection() {
+  try {
+    await query('SELECT 1');
+    console.log('تم الاتصال بقاعدة البيانات بنجاح');
     return true;
   } catch (error) {
-    console.error('❌ خطأ في الاتصال بقاعدة البيانات:', error);
-    if (error instanceof Error) {
-      console.error('تفاصيل الخطأ:', error.message);
-    }
+    console.error('فشل الاتصال بقاعدة البيانات:', error);
     return false;
   }
 }
 
-// إضافة طلب تواصل جديد
-export async function insertContactRequest(name: string, phone: string, message: string) {
-  try {
-    console.log('💾 محاولة حفظ طلب تواصل جديد...');
-    
-    // اختبار الاتصال أولاً
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      throw new Error('لا يمكن الاتصال بقاعدة البيانات');
-    }
-
-    const [result]: any = await pool.execute(
-      'INSERT INTO contact_requests (name, phone, message) VALUES (?, ?, ?)',
-      [name, phone, message]
-    );
-    
-    console.log('✅ تم حفظ طلب التواصل - ID:', result.insertId);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('❌ خطأ في حفظ الطلب:', error);
-    return { success: false, error };
-  }
-}
-
-// جلب جميع طلبات التواصل
-export async function getAllContactRequests() {
-  try {
-    console.log('📋 جلب جميع طلبات التواصل...');
-    
-    // اختبار الاتصال أولاً
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      throw new Error('لا يمكن الاتصال بقاعدة البيانات');
-    }
-
-    const [rows] = await pool.execute(
-      'SELECT * FROM contact_requests ORDER BY created_at DESC'
-    );
-    
-    console.log('✅ تم جلب الطلبات:', (rows as any).length);
-    return { success: true, data: rows };
-  } catch (error) {
-    console.error('❌ خطأ في جلب الطلبات:', error);
-    return { success: false, error };
-  }
-}
-
-// تحديث حالة الطلب
-export async function updateContactRequestStatus(id: number, status: string) {
-  try {
-    console.log('🔄 تحديث حالة الطلب:', id, 'إلى:', status);
-    
-    const [result] = await pool.execute(
-      'UPDATE contact_requests SET status = ? WHERE id = ?',
-      [status, id]
-    );
-    
-    console.log('✅ تم تحديث حالة الطلب:', id);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('❌ خطأ في تحديث الحالة:', error);
-    return { success: false, error };
-  }
-}
-
-// حذف طلب
-export async function deleteContactRequest(id: number) {
-  try {
-    console.log('🗑️ حذف الطلب:', id);
-    
-    const [result] = await pool.execute(
-      'DELETE FROM contact_requests WHERE id = ?',
-      [id]
-    );
-    
-    console.log('✅ تم حذف الطلب:', id);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('❌ خطأ في حذف الطلب:', error);
-    return { success: false, error };
-  }
-}
-
-export default pool;
+// تصدير pool للاستخدام المتقدم
+export { pool };

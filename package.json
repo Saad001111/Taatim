@@ -1,29 +1,56 @@
 {
-  "name": "curtains-website",
-  "version": "0.1.0",
+  "name": "ta3teem-curtains",
+  "version": "2.0.0",
+  "description": "موقع مؤسسة تعتيم للستائر والتصميم",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:init": "node scripts/init-db.js",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/typography": "^0.5.16",
-    "lucide-react": "^0.525.0",
-    "mysql2": "^3.14.1",
-    "next": "15.3.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "^15.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "mysql2": "^3.6.5",
+    "lucide-react": "^0.294.0",
+    "dotenv": "^16.3.1",
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.25",
+    "@types/react-dom": "^18.2.10",
+    "typescript": "^5.2.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "eslint": "^8.51.0",
+    "eslint-config-next": "^15.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "prettier": "^3.0.3"
+  },
+  "keywords": [
+    "ستائر",
+    "تصميم",
+    "ديكور",
+    "الرياض",
+    "السعودية",
+    "curtains",
+    "interior-design"
+  ],
+  "author": {
+    "name": "مؤسسة تعتيم",
+    "email": "info@ta3teem.com"
+  },
+  "license": "MIT",
+  "homepage": "https://ta3teem.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ta3teem/website.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
